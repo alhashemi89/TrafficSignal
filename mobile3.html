@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>إشارة ذكية — البديل</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background:#0d0d0d; min-height:100vh; font-family:'Segoe UI',Tahoma,Arial,sans-serif; display:flex; flex-direction:column; align-items:center; }
+.top-bar { width:100%; background:#111; padding:10px 16px; display:flex; align-items:center; justify-content:space-between; gap:10px; border-bottom:0.5px solid #222; }
+.app-name { font-size:1rem; color:white; font-weight:500; }
+.live-pill { display:flex; align-items:center; gap:6px; background:#0d2b1a; padding:5px 12px; border-radius:20px; }
+.live-dot  { width:7px; height:7px; border-radius:50%; background:#27ae60; animation:pulse 1.5s infinite; }
+@keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:0.3;} }
+.live-txt  { font-size:0.75rem; color:#27ae60; }
+.location-card { width:90%; background:#1a1a1a; border-radius:12px; padding:12px 16px; margin:16px 0 8px; display:flex; align-items:center; justify-content:space-between; }
+.loc-name { font-size:0.9rem; color:white; font-weight:500; }
+.loc-dist { font-size:0.75rem; color:#666; }
+.light-section { width:90%; background:#111; border:0.5px solid #222; border-radius:16px; padding:24px 16px; display:flex; flex-direction:column; align-items:center; gap:16px; margin-bottom:16px; }
+.tl-box-mobile { background:#1c1c1c; border:3px solid #2a2a2a; border-radius:20px; padding:16px 14px; display:flex; flex-direction:column; gap:12px; align-items:center; }
+.tl-m { width:80px; height:80px; border-radius:50%; background:#111; border:2px solid #222; transition:background 0.2s, box-shadow 0.2s; }
+.on-red    { background:#e74c3c; box-shadow:0 0 30px #e74c3caa; }
+.on-yellow { background:#f39c12; box-shadow:0 0 30px #f39c12aa; }
+.on-green  { background:#27ae60; box-shadow:0 0 30px #27ae60aa; }
+.countdown-big { font-size:3.5rem; font-weight:300; color:white; font-variant-numeric:tabular-nums; line-height:1; }
+.countdown-lbl { font-size:0.75rem; color:#555; text-align:center; }
+.state-pill { padding:8px 28px; border-radius:20px; font-size:1rem; font-weight:500; letter-spacing:1px; }
+.pill-green  { background:#0d2b1a; color:#27ae60; }
+.pill-red    { background:#2b0d0d; color:#e74c3c; }
+.pill-yellow { background:#2b1f00; color:#f39c12; }
+.pill-off    { background:#1a1a1a; color:#555; }
+.info-row { display:flex; gap:10px; width:90%; margin-bottom:14px; }
+.info-c { flex:1; background:#1a1a1a; border-radius:12px; border:0.5px solid #2a2a2a; padding:10px 12px; display:flex; flex-direction:column; gap:3px; }
+.ic-lbl { font-size:0.65rem; color:#555; text-transform:uppercase; letter-spacing:0.5px; }
+.ic-val { font-size:1.1rem; font-weight:500; color:white; }
+.ic-sub { font-size:0.65rem; color:#444; }
+.backup-badge { width:90%; background:#1a1500; border:0.5px solid #4a3a00; border-radius:12px; padding:10px 14px; display:none; align-items:center; gap:8px; margin-bottom:12px; }
+.backup-badge.show { display:flex; }
+.bb-dot { width:8px; height:8px; border-radius:50%; background:#f39c12; animation:pulse 1s infinite; flex-shrink:0; }
+.bb-text { font-size:0.78rem; color:#f39c12; }
+
+/* EMERGENCY BANNER */
+.emergency-banner {
+  display:none; width:90%;
+  border-radius:16px; padding:20px 16px;
+  margin-bottom:16px;
+  align-items:center; gap:16px;
+  background:#0a0010;
+  border:2px solid #cc0000;
+  animation:emgBorder 0.6s infinite;
+}
+.emergency-banner.show { display:flex; }
+@keyframes emgBorder { 0%,100%{border-color:#cc0000;} 50%{border-color:#0033cc;} }
+
+.emg-icon-wrap {
+  width:60px; height:60px; border-radius:50%;
+  display:flex; align-items:center; justify-content:center;
+  flex-shrink:0;
+  animation:emgIcon 0.6s infinite;
+}
+@keyframes emgIcon {
+  0%,49%  { background:#cc0000; }
+  50%,100%{ background:#0033cc; }
+}
+.emg-icon-inner {
+  width:30px; height:30px;
+  background:white;
+  clip-path:polygon(50% 0%, 100% 38%, 82% 100%, 18% 100%, 0% 38%);
+}
+.emg-text { display:flex; flex-direction:column; gap:5px; }
+.emg-title { font-size:1.05rem; font-weight:600; color:white; }
+.emg-sub   { font-size:0.82rem; color:#ffaaaa; line-height:1.5; }
+
+.bottom-notice { width:90%; background:#111; border-radius:12px; border:0.5px solid #1e1e1e; padding:12px 16px; text-align:center; margin-bottom:24px; }
+.bn-title { font-size:0.75rem; color:#555; margin-bottom:4px; }
+.bn-val   { font-size:0.85rem; color:#777; }
+</style>
+</head>
+<body>
+
+<div class="top-bar">
+  <img src="https://moi.gov.ae/ar/Images/moilogo2016.png" style="height:36px;object-fit:contain;" alt="وزارة الداخلية">
+  <div style="display:flex;flex-direction:column;align-items:center;gap:1px;flex:1;">
+    <span class="app-name">منظومة الإشارة المرورية الافتراضية</span>
+    <span style="font-size:0.65rem;color:#555;letter-spacing:0.5px;">وزارة الداخلية · إمارة أبوظبي</span>
+  </div>
+  <div class="live-pill"><div class="live-dot"></div><span class="live-txt">مباشر</span></div>
+</div>
+
+<div class="location-card">
+  <span class="loc-name">شارع الخليج العربي</span>
+  <span class="loc-dist">180 م أمامك</span>
+</div>
+
+<!-- EMERGENCY -->
+<div class="emergency-banner" id="emergency-banner">
+  <div class="emg-icon-wrap"><div class="emg-icon-inner"></div></div>
+  <div class="emg-text">
+    <div class="emg-title">تنبيه — مركبة طوارئ</div>
+    <div class="emg-sub">يوجد مركبة طوارئ بالخلف<br>يرجى إفساح الطريق فوراً</div>
+  </div>
+</div>
+
+<div class="light-section">
+  <div class="tl-box-mobile">
+    <div class="tl-m" id="m-red"></div>
+    <div class="tl-m" id="m-yellow"></div>
+    <div class="tl-m" id="m-green"></div>
+  </div>
+  <div>
+    <div class="countdown-big" id="m-countdown">--</div>
+    <div class="countdown-lbl">ثانية</div>
+  </div>
+  <div class="state-pill pill-green" id="m-state">في انتظار الإشارة</div>
+</div>
+
+<div class="backup-badge" id="backup-badge">
+  <div class="bb-dot"></div>
+  <span class="bb-text">وضع النسخ الاحتياطي — الإشارة الرئيسية متعطلة</span>
+</div>
+
+<div class="info-row">
+  <div class="info-c">
+    <div class="ic-lbl">الحالة</div>
+    <div class="ic-val" id="m-status">--</div>
+    <div class="ic-sub" id="m-status-sub">--</div>
+  </div>
+  <div class="info-c">
+    <div class="ic-lbl">المرحلة</div>
+    <div class="ic-val" id="m-phase">--</div>
+    <div class="ic-sub">الوضع الحالي</div>
+  </div>
+  <div class="info-c">
+    <div class="ic-lbl">تحديث</div>
+    <div class="ic-val" id="m-update">--</div>
+    <div class="ic-sub">تلقائي</div>
+  </div>
+</div>
+
+<div class="bottom-notice">
+  <div class="bn-title">هذه الإشارة تعمل بالتزامن مع</div>
+  <div class="bn-val">شارع الخليج العربي — نظام الإشارة الذكية</div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+const app = initializeApp({
+  apiKey: "AIzaSyCehbVfacBO9T4-7S8M_WuG_2lVUTY0_Co",
+  databaseURL: "https://vtrafficsignal-default-rtdb.firebaseio.com",
+  projectId: "vtrafficsignal",
+  authDomain: "vtrafficsignal.firebaseapp.com",
+  appId: "1:000:web:000",
+});
+const db = getDatabase(app);
+const stateRef = ref(db, 'signal/state');
+
+let currentData = null;
+
+function getCountdown(data) {
+  if (!data || data.remainingAtSend === undefined || !data.sentAt) return '--';
+  const elapsedSinceSend = (Date.now() - data.sentAt) / 1000;
+  const remaining = Math.max(0, Math.round(data.remainingAtSend - elapsedSinceSend));
+  return remaining;
+}
+
+function render() {
+  if (!currentData) return;
+  const data  = currentData;
+  const mode  = data.mode  || 'normal';
+  const phase = data.phase || 'green';
+  const cd    = getCountdown(data);
+  const ts    = data.ts || Date.now();
+
+  const mr = document.getElementById('m-red');
+  const my = document.getElementById('m-yellow');
+  const mg = document.getElementById('m-green');
+  const cdEl = document.getElementById('m-countdown');
+  const st   = document.getElementById('m-state');
+  const ms   = document.getElementById('m-status');
+  const mp   = document.getElementById('m-phase');
+  const mu   = document.getElementById('m-update');
+  const bb   = document.getElementById('backup-badge');
+  const emg  = document.getElementById('emergency-banner');
+
+  mr.className = 'tl-m';
+  my.className = 'tl-m';
+  mg.className = 'tl-m';
+
+  const secAgo = Math.round((Date.now() - ts) / 1000);
+  mu.textContent = secAgo <= 1 ? 'الآن' : secAgo + ' ث';
+
+  // Emergency مستقل
+  emg.classList.toggle('show', !!data.emergency);
+
+  // وضع التعطّل: الموبايل يكمل يعرض الإشارة بشكل طبيعي من نفس الوقت
+  bb.classList.toggle('show', mode === 'off');
+
+  cdEl.textContent = cd;
+
+  if (phase === 'red') {
+    mr.className = 'tl-m on-red';
+    st.className = 'state-pill pill-red';
+    st.textContent = 'قف';
+    ms.textContent = 'أحمر';
+    mp.textContent = 'قف';
+    document.getElementById('m-status-sub').textContent = 'لا تتحرك';
+  } else if (phase === 'yellow') {
+    my.className = 'tl-m on-yellow';
+    st.className = 'state-pill pill-yellow';
+    st.textContent = 'استعد';
+    ms.textContent = 'أصفر';
+    mp.textContent = 'استعد';
+    document.getElementById('m-status-sub').textContent = 'على وشك التغيير';
+  } else {
+    mg.className = 'tl-m on-green';
+    st.className = 'state-pill pill-green';
+    st.textContent = 'تفضل';
+    ms.textContent = 'أخضر';
+    mp.textContent = 'تفضل';
+    document.getElementById('m-status-sub').textContent = 'يمكنك التحرك';
+  }
+}
+
+onValue(stateRef, (snapshot) => {
+  currentData = snapshot.val();
+  render();
+});
+
+</script>
+</body>
+</html>
