@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>إشارة شمال</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:#0d0d0d;height:100vh;font-family:"Segoe UI",Arial,sans-serif;display:flex;flex-direction:column;overflow:hidden;direction:rtl;}
+.top-bar{width:100%;background:#111;padding:8px 12px;display:flex;align-items:center;gap:8px;border-bottom:0.5px solid #222;flex-shrink:0;}
+.app-info{flex:1;text-align:center;}
+.app-name{font-size:0.78rem;color:white;font-weight:500;}
+.app-sub{font-size:0.56rem;color:#555;}
+.live-pill{display:flex;align-items:center;gap:4px;background:#0d2b1a;padding:3px 8px;border-radius:20px;flex-shrink:0;}
+.live-dot{width:6px;height:6px;border-radius:50%;background:#27ae60;animation:livePulse 1.5s infinite;}
+@keyframes livePulse{0%,100%{opacity:1;}50%{opacity:0.3;}}
+.live-txt{font-size:0.6rem;color:#27ae60;}
+#map{flex:1;min-height:0;}
+.bottom-panel{background:#111;padding:10px 14px;display:flex;flex-direction:column;gap:8px;flex-shrink:0;border-top:1px solid #1e1e1e;}
+.light-row{display:flex;align-items:center;gap:14px;}
+.tl-big{background:#1c1c1c;border:2px solid #2a2a2a;border-radius:10px;padding:8px 6px;display:flex;flex-direction:column;gap:7px;align-items:center;flex-shrink:0;}
+.tl-big-l{width:40px;height:40px;border-radius:50%;background:#0a0a0a;transition:background 0.3s,box-shadow 0.3s;}
+.on-r{background:#cc2200!important;box-shadow:0 0 16px #cc220099!important;}
+.on-y{background:#cc8800!important;box-shadow:0 0 16px #cc880099!important;}
+.on-g{background:#00aa33!important;box-shadow:0 0 16px #00aa3399!important;}
+.sig-info{flex:1;}
+.si-dir{font-size:0.6rem;color:#555;letter-spacing:1px;text-transform:uppercase;margin-bottom:2px;}
+.si-phase{font-size:1.4rem;font-weight:500;color:#e0e0e0;}
+.si-cd{font-size:2.4rem;font-weight:300;color:#aaa;font-family:monospace;line-height:1;}
+.si-cd-lbl{font-size:0.58rem;color:#555;}
+.si-pill{display:inline-block;margin-top:4px;padding:3px 10px;border-radius:20px;font-size:0.65rem;}
+.pill-g{background:#0d2b1a;color:#27ae60;border:1px solid #1a4a2a;}
+.pill-r{background:#2b0d0d;color:#e74c3c;border:1px solid #4a1a1a;}
+.pill-y{background:#2b1f00;color:#f39c12;border:1px solid #4a3a00;}
+.info-row{display:grid;grid-template-columns:1fr 1fr;gap:6px;}
+.info-c{background:#1a1a1a;border:0.5px solid #222;border-radius:8px;padding:6px;text-align:center;}
+.ic-v{font-size:0.85rem;font-weight:500;color:#bbb;}
+.ic-l{font-size:0.56rem;color:#555;margin-top:1px;text-transform:uppercase;}
+.emergency-banner{display:none;background:#0a0010;border:2px solid #cc0000;border-radius:10px;padding:8px 12px;align-items:center;gap:10px;animation:emgB 0.6s infinite;}
+.emergency-banner.show{display:flex;}
+@keyframes emgB{0%,100%{border-color:#cc0000;}50%{border-color:#0033cc;}}
+.emg-icon{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;animation:emgI 0.6s infinite;}
+@keyframes emgI{0%,49%{background:#cc0000;}50%,100%{background:#0033cc;}}
+.emg-icon-inner{width:14px;height:14px;background:white;clip-path:polygon(50% 0%,100% 38%,82% 100%,18% 100%,0% 38%);}
+.et{font-size:0.8rem;font-weight:600;color:white;}
+.es{font-size:0.65rem;color:#ffaaaa;margin-top:1px;}
+@keyframes markerBlink{0%,100%{opacity:1;}50%{opacity:0.2;}}
+@keyframes driverMsg{0%,100%{border-color:#4a9aff;}50%{border-color:#00ccff;}}
+.driver-msg-banner{display:none;width:90%;background:#0a1a2a;border:2px solid #4a9aff;border-radius:12px;padding:12px 16px;margin-bottom:10px;align-items:flex-start;gap:10px;animation:driverMsg 1.5s infinite;}
+.driver-msg-banner.show{display:flex;}
+.dmb-icon{font-size:1.2rem;flex-shrink:0;margin-top:2px;}
+.dmb-text{font-size:0.85rem;color:#a0d0ff;line-height:1.5;word-break:break-word;}
+@keyframes markerRing{0%{transform:translate(-50%,-80%) scale(0.5);opacity:0.9;}100%{transform:translate(-50%,-80%) scale(2.2);opacity:0;}}
+</style>
+</head>
+<body>
+
+<div class="top-bar">
+  <img src="https://moi.gov.ae/ar/Images/moilogo2016.png" style="height:26px;object-fit:contain;">
+  <div class="app-info">
+    <div class="app-name">منظومة الإشارة المرورية الافتراضية</div>
+    <div class="app-sub">إشارة شمال — شارع الخليج العربي · أبوظبي</div>
+  </div>
+  <div class="live-pill"><div class="live-dot"></div><span class="live-txt">مباشر</span></div>
+</div>
+
+<div id="map"></div>
+
+<div class="bottom-panel">
+  <div class="driver-msg-banner" id="driver-msg-banner">
+    <div class="dmb-icon">📢</div>
+    <div class="dmb-text" id="driver-msg-text"></div>
+  </div>
+
+  <div class="emergency-banner" id="emg-banner">
+    <div class="emg-icon"><div class="emg-icon-inner"></div></div>
+    <div><div class="et">تنبيه — مركبة طوارئ</div><div class="es">توجد سيارة طوارئ بالقرب من التقاطع — يرجى الانتباه وإفساح الطريق</div></div>
+  </div>
+  <div class="light-row">
+    <div class="tl-big">
+      <div class="tl-big-l" id="big-r"></div>
+      <div class="tl-big-l" id="big-y"></div>
+      <div class="tl-big-l" id="big-g"></div>
+    </div>
+    <div class="sig-info">
+      <div class="si-dir">إشارة شمال</div>
+      <div class="si-phase" id="si-phase">--</div>
+      <div class="si-cd" id="si-cd">--</div>
+      <div class="si-cd-lbl">ثانية متبقية</div>
+      <div class="si-pill pill-r" id="si-pill">انتظار</div>
+    </div>
+  </div>
+  <div class="info-row">
+    <div class="info-c"><div class="ic-v" id="ic-status">--</div><div class="ic-l">الحالة</div></div>
+    <div class="info-c"><div class="ic-v" id="ic-update">--</div><div class="ic-l">آخر تحديث</div></div>
+  </div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+<script>
+firebase.initializeApp({
+  apiKey: "AIzaSyCehbVfacBO9T4-7S8M_WuG_2lVUTY0_Co",
+  databaseURL: "https://vtrafficsignal-default-rtdb.firebaseio.com",
+  projectId: "vtrafficsignal",
+  authDomain: "vtrafficsignal.firebaseapp.com",
+  appId: "1:000:web:000"
+});
+var db = firebase.database();
+
+// MAP
+var map = L.map('map', {zoomControl:true, attributionControl:false})
+  .setView([24.4672, 54.339763], 19);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {maxZoom:21}).addTo(map);
+
+// إشارة مرور عمودية
+function makeSigIcon(phase, mode) {
+  var off = mode === 'off';
+  var r = (!off && phase==='red')    ? '#ff2200' : '#111';
+  var y = (!off && phase==='yellow') ? '#ffaa00' : '#111';
+  var g = (!off && phase==='green')  ? '#00ee44' : '#111';
+  var html = '<div style="display:flex;flex-direction:column;align-items:center;filter:drop-shadow(2px 4px 5px rgba(0,0,0,0.8));">'
+    + '<svg viewBox="0 0 24 56" width="24" height="56" xmlns="http://www.w3.org/2000/svg">'
+    + '<rect x="2" y="0" width="20" height="48" rx="5" fill="#111" stroke="#2a2a2a" stroke-width="1.5"/>'
+    + '<circle cx="12" cy="10" r="7" fill="' + r + '"/>'
+    + '<circle cx="12" cy="24" r="7" fill="' + y + '"/>'
+    + '<circle cx="12" cy="38" r="7" fill="' + g + '"/>'
+    + '<rect x="10" y="48" width="4" height="8" rx="2" fill="#333"/>'
+    + '</svg></div>';
+  return L.divIcon({html:html, iconSize:[24,56], iconAnchor:[12,56], className:''});
+}
+
+// ماركر موقع أحمر يومض
+function makeMarkerIcon() {
+  var html = '<div style="position:relative;width:34px;height:44px;">'
+    + '<div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-80%);'
+    + 'width:38px;height:38px;border-radius:50%;background:rgba(231,76,60,0.15);'
+    + 'border:2px solid rgba(231,76,60,0.4);animation:markerRing 1.5s infinite;"></div>'
+    + '<svg viewBox="0 0 34 44" width="34" height="44" xmlns="http://www.w3.org/2000/svg"'
+    + ' style="position:absolute;top:0;left:0;animation:markerBlink 1s infinite;">'
+    + '<ellipse cx="17" cy="42" rx="7" ry="2" fill="rgba(0,0,0,0.3)"/>'
+    + '<path d="M17 2 C10 2 4 8 4 15 C4 24 17 42 17 42 C17 42 30 24 30 15 C30 8 24 2 17 2 Z"'
+    + ' fill="#e74c3c" stroke="white" stroke-width="2"/>'
+    + '<circle cx="17" cy="15" r="7" fill="white" opacity="0.95"/>'
+    + '<circle cx="17" cy="15" r="3.5" fill="#e74c3c"/>'
+    + '</svg></div>';
+  return L.divIcon({html:html, iconSize:[34,44], iconAnchor:[17,42], className:''});
+}
+
+// إشارة هذا الموبايل
+var sigMarker = L.marker([24.467092, 54.339913], {icon: makeSigIcon('red')})
+  .addTo(map).bindPopup('<b>إشارة شمال</b>');
+
+// ماركر موقعي
+L.marker([24.467231, 54.340096], {icon: makeMarkerIcon()})
+  .addTo(map).bindPopup('<b>موقعي</b>').openPopup();
+
+// إشارات الاتجاهات الأخرى
+  var msouth = L.marker([24.466718,54.339685], {icon:makeSigIcon('red')}).addTo(map).bindPopup('<b>إشارة جنوب</b>');
+  var meast = L.marker([24.466816,54.339991], {icon:makeSigIcon('red')}).addTo(map).bindPopup('<b>إشارة شرق</b>');
+  var mwest = L.marker([24.467016,54.339572], {icon:makeSigIcon('red')}).addTo(map).bindPopup('<b>إشارة غرب</b>');
+
+// دوال مساعدة
+var serverOffset = 0;
+db.ref('.info/serverTimeOffset').on('value', function(snap){ serverOffset = snap.val()||0; });
+
+function getCD(data) {
+  if(!data || data.remainingAtSend===undefined || !data.sentAt) return '--';
+  var now = Date.now() + serverOffset;
+  return Math.max(0, Math.round(data.remainingAtSend - (now - data.sentAt)/1000));
+}
+function phaseAr(p) { return p==='green'?'أخضر':p==='yellow'?'أصفر':'أحمر'; }
+
+// استمع لإشارتي — يعرض الإشارة دائماً بغض النظر عن الإطفاء
+db.ref('signal/north').on('value', function(snap) {
+  var data = snap.val();
+  if(!data) return;
+  var phase = data.phase || 'red';
+  var cd    = getCD(data);
+
+  sigMarker.setIcon(makeSigIcon(phase));
+
+  document.getElementById('big-r').className = 'tl-big-l' + (phase==='red'    ? ' on-r' : '');
+  document.getElementById('big-y').className = 'tl-big-l' + (phase==='yellow' ? ' on-y' : '');
+  document.getElementById('big-g').className = 'tl-big-l' + (phase==='green'  ? ' on-g' : '');
+
+  document.getElementById('si-phase').textContent = phaseAr(phase);
+  document.getElementById('si-cd').textContent    = cd;
+
+  var pill = document.getElementById('si-pill');
+  pill.className   = 'si-pill ' + (phase==='green'?'pill-g':phase==='yellow'?'pill-y':'pill-r');
+  pill.textContent = phase==='green'?'تفضل':phase==='yellow'?'استعد':'قف';
+
+  document.getElementById('ic-status').textContent = phaseAr(phase);
+  var sec = Math.round((Date.now() - (data.ts||Date.now())) / 1000);
+  document.getElementById('ic-update').textContent = sec<=1?'الآن':sec+' ث';
+  document.getElementById('emg-banner').classList.toggle('show', !!data.emergency);
+});
+
+// استمع لرسالة السائقين
+db.ref('signal/driver_message').on('value', function(snap){
+  var data = snap.val();
+  var banner = document.getElementById('driver-msg-banner');
+  var txtEl  = document.getElementById('driver-msg-text');
+  if(data && data.active && data.text){
+    txtEl.textContent = data.text;
+    banner.classList.add('show');
+  } else {
+    banner.classList.remove('show');
+  }
+});
+
+// استمع لباقي الإشارات
+  db.ref('signal/south').on('value', function(s){ var d=s.val(); if(d&&msouth) msouth.setIcon(makeSigIcon(d.phase||'red')); });
+  db.ref('signal/east').on('value', function(s){ var d=s.val(); if(d&&meast) meast.setIcon(makeSigIcon(d.phase||'red')); });
+  db.ref('signal/west').on('value', function(s){ var d=s.val(); if(d&&mwest) mwest.setIcon(makeSigIcon(d.phase||'red')); });
+</script>
+</body>
+</html>
