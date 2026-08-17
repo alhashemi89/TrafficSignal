@@ -1,0 +1,766 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>وزارة الداخلية</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<style>
+:root{
+  --bg:#2e5c9e;
+  --card:#3d72b4;
+  --card2:#35639f;
+  --border:rgba(255,255,255,0.20);
+  --border2:rgba(255,255,255,0.32);
+  --txt:#ffffff;
+  --muted:rgba(255,255,255,0.60);
+  --muted2:rgba(255,255,255,0.82);
+  --red:#ff5147;
+  --yellow:#ffc233;
+  --green:#42e070;
+  --blue:#cfe6ff;
+  --moi-navy:#0f2f5c;
+  --moi-gold:#c8a45c;
+  --rail:#1b3c63;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+body{
+  height:100vh;font-family:'Tajawal','Segoe UI',Arial,sans-serif;
+  overflow:hidden;direction:rtl;color:var(--txt);background:#27508e;
+}
+
+/* ===== نظام الشاشات ===== */
+.screen{display:none;flex-direction:column;position:fixed;inset:0;}
+.screen.active{display:flex;animation:fadeIn 0.35s ease;}
+@keyframes fadeIn{from{opacity:0;transform:scale(1.015);}to{opacity:1;transform:scale(1);}}
+
+/* نمط المضلعات الهندسية (هوية الوزارة) */
+.poly{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;}
+
+/* ══════════════════════════════════════════
+   الشاشة ١ — صفحة الدخول
+   ══════════════════════════════════════════ */
+#screen-splash{background:#efe9e0;}
+.sp-header{
+  background:#ffffff;padding:14px 16px;display:flex;align-items:center;
+  justify-content:space-between;gap:12px;flex-shrink:0;z-index:3;
+  box-shadow:0 2px 10px rgba(0,0,0,0.10);
+}
+.sp-h-en{text-align:left;white-space:nowrap;}
+.sp-h-l1{font-size:0.62rem;font-weight:800;color:var(--moi-gold);letter-spacing:0.2px;line-height:1.55;}
+.sp-h-l2{font-size:0.62rem;font-weight:800;color:var(--moi-navy);letter-spacing:0.2px;line-height:1.55;}
+.sp-header img{height:54px;max-width:62%;object-fit:contain;}
+
+.sp-body{
+  flex:1;position:relative;overflow:hidden;
+  display:flex;flex-direction:column;align-items:center;
+  background:linear-gradient(180deg,#d8c9ad 0%,#c0a983 38%,#9a8360 68%,#6b5942 100%);
+}
+/* صورة القلعة (رسم SVG) */
+.sp-fort{position:absolute;bottom:0;left:0;right:0;height:58%;}
+.sp-scrim{position:absolute;inset:0;background:linear-gradient(180deg,rgba(60,45,30,0.28) 0%,rgba(55,42,28,0.12) 42%,rgba(30,24,16,0.60) 100%);}
+
+.sp-content{position:relative;z-index:2;display:flex;flex-direction:column;align-items:center;flex:1;width:100%;padding:30px 20px 22px;}
+.sp-title-ar{font-size:1.65rem;font-weight:800;color:#fff;text-shadow:0 2px 12px rgba(0,0,0,0.5);letter-spacing:0.5px;}
+.sp-title-en{font-size:1.05rem;font-weight:700;color:#fff;text-shadow:0 2px 12px rgba(0,0,0,0.5);margin-top:2px;letter-spacing:0.3px;}
+
+.sp-emblem{margin-top:26px;width:185px;max-width:60%;height:auto;filter:drop-shadow(0 4px 14px rgba(0,0,0,0.45));}
+.sp-dots{display:flex;gap:7px;margin-top:16px;}
+.sp-dot{width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,0.45);}
+.sp-dot.on{background:#fff;width:20px;border-radius:4px;}
+
+.sp-spacer{flex:1;}
+.sp-enter{
+  width:100%;max-width:300px;background:#fff;color:var(--moi-navy);
+  border:none;border-top:3px solid var(--moi-gold);border-radius:14px;
+  padding:15px;font-size:1.02rem;font-weight:800;font-family:inherit;cursor:pointer;
+  box-shadow:0 10px 30px rgba(0,0,0,0.35);
+  display:flex;align-items:center;justify-content:center;gap:10px;
+  transition:transform 0.12s;
+}
+.sp-enter:active{transform:scale(0.97);}
+
+/* ══════════════════════════════════════════
+   الشاشة ٢ — قائمة الخدمات
+   ══════════════════════════════════════════ */
+#screen-services{background:linear-gradient(180deg,#4c83c6 0%,#2e5c9e 55%,#27508e 100%);}
+.sv-top{display:flex;align-items:center;gap:10px;padding:12px 14px 10px;flex-shrink:0;position:relative;z-index:2;}
+.sv-search{
+  flex:1;background:#fff;border-radius:24px;padding:9px 16px;
+  display:flex;align-items:center;justify-content:space-between;gap:8px;
+  box-shadow:0 3px 10px rgba(0,0,0,0.18);
+}
+.sv-search span{font-size:0.76rem;color:#8494ab;font-weight:500;}
+.sv-icon-btn{width:30px;height:30px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+
+.sv-main{flex:1;display:flex;min-height:0;position:relative;z-index:2;}
+
+/* الشريط الجانبي للقطاعات */
+.sv-rail{
+  width:66px;background:linear-gradient(180deg,#1e4370,#16314f);flex-shrink:0;
+  display:flex;flex-direction:column;padding-top:4px;
+}
+.sv-rail-item{
+  padding:14px 4px;display:flex;flex-direction:column;align-items:center;gap:5px;
+  color:rgba(255,255,255,0.55);position:relative;
+}
+.sv-rail-item.on{color:#fff;background:rgba(255,255,255,0.07);}
+.sv-rail-item.on::before{content:'';position:absolute;right:0;top:8px;bottom:8px;width:3px;background:var(--moi-gold);border-radius:2px;}
+.sv-rail-lbl{font-size:0.56rem;font-weight:700;text-align:center;line-height:1.3;}
+
+/* منطقة الخدمات */
+.sv-scroll{flex:1;overflow-y:auto;padding:4px 12px 16px;}
+.sv-scroll::-webkit-scrollbar{width:0;}
+.sv-sector{font-size:1.35rem;font-weight:800;color:#fff;text-align:right;margin:6px 2px 10px;}
+.sv-group{font-size:0.94rem;font-weight:700;color:#dce9f8;text-align:right;margin:16px 2px 9px;}
+.sv-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px;}
+.sv-card{
+  background:rgba(255,255,255,0.11);border:1px solid rgba(255,255,255,0.14);
+  border-radius:6px;padding:13px 6px 11px;
+  display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:9px;
+  min-height:112px;text-align:center;
+}
+.sv-card svg{flex-shrink:0;}
+.sv-card-lbl{font-size:0.66rem;font-weight:700;color:#fff;line-height:1.45;}
+.sv-card.locked{opacity:0.5;}
+
+/* بطاقة الخدمة النشطة — نفس شكل البطاقات مع تمييز خفيف */
+.sv-card.live{
+  background:rgba(255,255,255,0.20);border:1px solid rgba(255,255,255,0.45);
+  cursor:pointer;transition:transform 0.12s;
+  animation:livePulse 2.8s ease-in-out infinite;
+}
+.sv-card.live:active{transform:scale(0.97);}
+@keyframes livePulse{
+  0%,100%{border-color:rgba(255,255,255,0.45);}
+  50%{border-color:var(--moi-gold);}
+}
+
+/* الشريط السفلي */
+.sv-nav{
+  background:linear-gradient(180deg,#2b568f,#1e4370);flex-shrink:0;
+  display:grid;grid-template-columns:repeat(5,1fr);padding:8px 4px 10px;
+  border-top:1px solid rgba(255,255,255,0.12);position:relative;z-index:2;
+}
+.sv-nav-item{display:flex;flex-direction:column;align-items:center;gap:4px;color:rgba(255,255,255,0.6);}
+.sv-nav-item.on{color:#fff;}
+.sv-nav-lbl{font-size:0.56rem;font-weight:700;}
+
+/* تنبيه الخدمة المقفلة */
+.toast{
+  position:fixed;bottom:88px;left:50%;transform:translateX(-50%) translateY(14px);
+  background:rgba(15,47,92,0.95);border:1px solid rgba(255,255,255,0.28);
+  color:#fff;font-size:0.76rem;font-weight:600;padding:11px 20px;border-radius:24px;
+  opacity:0;pointer-events:none;transition:opacity 0.25s,transform 0.25s;z-index:999;
+  box-shadow:0 8px 24px rgba(0,0,0,0.4);
+}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+/* ══════════════════════════════════════════
+   الشاشة ٣ — الإشارة الحية
+   ══════════════════════════════════════════ */
+#screen-signal{background:linear-gradient(180deg,#4c83c6 0%,#2e5c9e 55%,#27508e 100%);}
+.top-bar{width:100%;background:linear-gradient(180deg,#27508e,#224a86);padding:9px 12px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border);flex-shrink:0;}
+.top-bar img{height:28px;object-fit:contain;}
+.back-btn{
+  width:32px;height:32px;border-radius:9px;background:rgba(255,255,255,0.12);
+  border:1px solid var(--border2);color:#fff;font-size:1.1rem;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;cursor:pointer;font-family:inherit;
+}
+.back-btn:active{background:rgba(255,255,255,0.24);}
+.app-info{flex:1;text-align:center;}
+.app-name{font-size:0.8rem;color:var(--txt);font-weight:700;}
+.app-sub{font-size:0.58rem;color:var(--muted);margin-top:1px;}
+.live-pill{display:flex;align-items:center;gap:5px;background:rgba(66,224,112,0.16);border:1px solid rgba(66,224,112,0.45);padding:4px 9px;border-radius:20px;flex-shrink:0;}
+.live-dot{width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 6px var(--green);animation:livePulseDot 1.6s infinite;}
+@keyframes livePulseDot{0%,100%{opacity:1;}50%{opacity:0.25;}}
+.live-txt{font-size:0.6rem;color:var(--green);font-weight:700;}
+
+#map{flex:1;min-height:0;}
+.leaflet-container{background:#35639f;}
+
+.bottom-panel{background:linear-gradient(180deg,#2b568f,#24497e);padding:10px 14px 12px;display:flex;flex-direction:column;gap:9px;flex-shrink:0;border-top:1px solid var(--border);box-shadow:0 -8px 24px rgba(0,0,0,0.35);}
+
+.driver-msg-banner{display:none;background:rgba(20,45,90,0.9);border:2px solid rgba(255,255,255,0.5);border-radius:12px;padding:10px 14px;align-items:flex-start;gap:10px;animation:driverMsg 1.6s infinite;}
+.driver-msg-banner.show{display:flex;}
+@keyframes driverMsg{0%,100%{border-color:rgba(255,255,255,0.5);}50%{border-color:rgba(140,210,255,0.85);}}
+.dmb-icon{font-size:1.15rem;flex-shrink:0;margin-top:2px;}
+.dmb-text{font-size:0.85rem;color:#e4f0ff;line-height:1.5;word-break:break-word;font-weight:500;}
+
+.emergency-banner{display:none;background:rgba(20,4,8,0.9);border:2px solid var(--red);border-radius:12px;padding:9px 12px;align-items:center;gap:10px;animation:emgB 0.6s infinite;}
+.emergency-banner.show{display:flex;}
+@keyframes emgB{0%,100%{border-color:var(--red);}50%{border-color:#3a6cff;}}
+.emg-icon{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;animation:emgI 0.6s infinite;}
+@keyframes emgI{0%,49%{background:var(--red);}50%,100%{background:#2244cc;}}
+.emg-icon-inner{width:14px;height:14px;background:white;clip-path:polygon(50% 0%,100% 38%,82% 100%,18% 100%,0% 38%);}
+.et{font-size:0.8rem;font-weight:800;color:white;}
+.es{font-size:0.64rem;color:#ffaaaa;margin-top:1px;}
+
+.light-row{display:flex;align-items:center;gap:14px;}
+.tl-big{background:linear-gradient(180deg,#161c2c,#10141f);border:2px solid #26304d;border-radius:12px;padding:8px 6px;display:flex;flex-direction:column;gap:7px;align-items:center;flex-shrink:0;cursor:pointer;box-shadow:inset 0 2px 8px rgba(0,0,0,0.6);}
+.tl-big-l{width:38px;height:38px;border-radius:50%;background:#0a0e18;transition:background 0.3s,box-shadow 0.3s;}
+.on-r{background:var(--red)!important;box-shadow:0 0 16px #ff514799!important;}
+.on-y{background:var(--yellow)!important;box-shadow:0 0 16px #ffc23399!important;}
+.on-g{background:var(--green)!important;box-shadow:0 0 16px #42e07099!important;}
+
+.sig-info{flex:1;display:flex;flex-direction:column;justify-content:center;}
+.si-dir{font-size:0.62rem;color:var(--muted);letter-spacing:1.5px;margin-bottom:2px;font-weight:700;}
+.si-phase{font-size:1.35rem;font-weight:800;color:var(--txt);line-height:1.2;}
+.si-pill{display:inline-block;width:fit-content;margin-top:5px;padding:3px 12px;border-radius:20px;font-size:0.68rem;font-weight:700;}
+.pill-g{background:rgba(66,224,112,0.18);color:#8dffb3;border:1px solid rgba(66,224,112,0.55);}
+.pill-r{background:rgba(255,81,71,0.18);color:#ffc4c0;border:1px solid rgba(255,81,71,0.55);}
+.pill-y{background:rgba(255,194,51,0.18);color:#ffe1a0;border:1px solid rgba(255,194,51,0.55);}
+
+.cd-ring-wrap{position:relative;width:84px;height:84px;flex-shrink:0;}
+.cd-ring-wrap svg{transform:rotate(-90deg);}
+.cd-ring-bg{fill:none;stroke:rgba(255,255,255,0.22);stroke-width:6;}
+.cd-ring-fg{fill:none;stroke:var(--muted2);stroke-width:6;stroke-linecap:round;transition:stroke-dashoffset 0.9s linear, stroke 0.3s;}
+.cd-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;}
+.cd-num{font-size:1.7rem;font-weight:800;font-family:'Consolas',monospace;color:var(--txt);line-height:1;transition:color 0.3s;}
+.cd-lbl{font-size:0.52rem;color:var(--muted);margin-top:1px;}
+.c-red{color:var(--red)!important;}.c-yellow{color:var(--yellow)!important;}.c-green{color:var(--green)!important;}
+
+.info-row{display:grid;grid-template-columns:1fr 1fr;gap:7px;}
+.info-c{background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:7px;text-align:center;}
+.ic-v{font-size:0.85rem;font-weight:700;color:var(--muted2);}
+.ic-l{font-size:0.56rem;color:var(--muted);margin-top:1px;letter-spacing:0.5px;}
+
+@keyframes markerBlink{0%,100%{opacity:1;}50%{opacity:0.2;}}
+@keyframes markerRing{0%{transform:translate(-50%,-80%) scale(0.5);opacity:0.9;}100%{transform:translate(-50%,-80%) scale(2.2);opacity:0;}}
+
+.tl-overlay{position:fixed;inset:0;z-index:9999;background:rgba(5,8,16,0.95);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;cursor:pointer;opacity:0;pointer-events:none;transition:opacity 0.25s;backdrop-filter:blur(6px);}
+.tl-overlay.show{opacity:1;pointer-events:all;}
+.fs-dir{font-size:1.1rem;font-weight:800;color:var(--muted2);letter-spacing:1px;}
+.tl-big-fs{background:linear-gradient(180deg,#161c2c,#10141f);border:3px solid #26304d;border-radius:26px;padding:26px 22px;display:flex;flex-direction:column;gap:22px;align-items:center;transform:scale(0.85);transition:transform 0.25s;box-shadow:inset 0 4px 16px rgba(0,0,0,0.7), 0 20px 60px rgba(0,0,0,0.6);}
+.tl-overlay.show .tl-big-fs{transform:scale(1);}
+.tl-big-fs-l{width:105px;height:105px;border-radius:50%;background:#0a0e18;border:2px solid #141a29;transition:background 0.3s,box-shadow 0.3s;}
+.tl-big-fs-l.on-r{background:var(--red);box-shadow:0 0 55px #ff514799;}
+.tl-big-fs-l.on-y{background:var(--yellow);box-shadow:0 0 55px #ffc23399;}
+.tl-big-fs-l.on-g{background:var(--green);box-shadow:0 0 55px #42e07099;}
+.fs-cd{font-size:2.6rem;font-weight:800;font-family:'Consolas',monospace;color:var(--txt);line-height:1;}
+.tl-fs-hint{font-size:0.68rem;color:#7fa3cc;letter-spacing:2px;}
+</style>
+</head>
+<body>
+
+<!-- ═══════════════ الشاشة ١ — الدخول ═══════════════ -->
+<div class="screen active" id="screen-splash">
+  <div class="sp-header">
+    <img src="https://cdservices.moi.gov.ae/images/moilogo2016.png" alt="وزارة الداخلية">
+    <div class="sp-h-en">
+      <div class="sp-h-l1">UNITED ARAB EMIRATES</div>
+      <div class="sp-h-l2">MINISTRY OF INTERIOR</div>
+    </div>
+  </div>
+
+  <div class="sp-body">
+    <!-- القلعة -->
+    <svg class="sp-fort" viewBox="0 0 400 240" preserveAspectRatio="none">
+      <path d="M0 240 L0 150 L28 150 L28 138 L40 138 L40 150 L52 150 L52 138 L64 138 L64 150 L92 150 L92 240 Z" fill="#7d7261" opacity="0.85"/>
+      <path d="M150 240 L150 60 L162 60 L162 46 L176 46 L176 60 L190 60 L190 46 L204 46 L204 60 L218 60 L218 46 L232 46 L232 60 L244 60 L244 240 Z" fill="#8a7e6b" opacity="0.95"/>
+      <rect x="176" y="96" width="16" height="30" rx="7" fill="#5d5546" opacity="0.8"/>
+      <rect x="206" y="96" width="16" height="30" rx="7" fill="#5d5546" opacity="0.8"/>
+      <rect x="190" y="160" width="18" height="40" rx="9" fill="#5d5546" opacity="0.7"/>
+      <path d="M300 240 L300 120 L312 120 L312 108 L326 108 L326 120 L340 120 L340 108 L354 108 L354 120 L366 120 L366 240 Z" fill="#75695a" opacity="0.8"/>
+      <path d="M92 240 L92 186 L150 186 L150 240 Z" fill="#6e6354" opacity="0.75"/>
+      <path d="M244 240 L244 196 L300 196 L300 240 Z" fill="#6e6354" opacity="0.7"/>
+    </svg>
+    <div class="sp-scrim"></div>
+    <svg class="poly" viewBox="0 0 100 100" preserveAspectRatio="none">
+      <polygon points="0,0 42,0 18,34" fill="#fff" opacity="0.05"/>
+      <polygon points="42,0 100,0 74,26" fill="#fff" opacity="0.03"/>
+      <polygon points="0,34 34,52 0,72" fill="#fff" opacity="0.04"/>
+      <polygon points="100,26 100,68 62,48" fill="#fff" opacity="0.045"/>
+      <polygon points="20,100 58,64 92,100" fill="#fff" opacity="0.035"/>
+    </svg>
+
+    <div class="sp-content">
+      <div class="sp-title-ar">خدماتنا بين يديك</div>
+      <div class="sp-title-en">Services at your fingertips</div>
+
+      <img class="sp-emblem" src="https://cdservices.moi.gov.ae/images/moi-award.png" alt="نظام النجوم العالمي لتصنيف الخدمات">
+
+      <div class="sp-dots"><div class="sp-dot"></div><div class="sp-dot on"></div><div class="sp-dot"></div></div>
+
+      <div class="sp-spacer"></div>
+
+      <button class="sp-enter" onclick="showScreen('services')">
+        <span>دخــول</span>
+        <span style="font-size:1.15rem;">←</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ الشاشة ٢ — الخدمات ═══════════════ -->
+<div class="screen" id="screen-services">
+  <svg class="poly" viewBox="0 0 100 100" preserveAspectRatio="none">
+    <polygon points="0,0 38,0 14,30" fill="#fff" opacity="0.045"/>
+    <polygon points="38,0 100,0 70,22" fill="#fff" opacity="0.028"/>
+    <polygon points="0,30 30,50 0,68" fill="#fff" opacity="0.035"/>
+    <polygon points="100,22 100,60 66,42" fill="#fff" opacity="0.04"/>
+    <polygon points="14,100 52,62 88,100" fill="#fff" opacity="0.03"/>
+    <polygon points="0,72 26,86 0,100" fill="#fff" opacity="0.038"/>
+  </svg>
+
+  <div class="sv-top">
+    <div class="sv-icon-btn">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round">
+        <rect x="3" y="4" width="12" height="16" rx="2"/><path d="M18 8c1.6 1.6 1.6 6.4 0 8M20.6 5.6c2.6 2.8 2.6 10 0 12.8"/>
+      </svg>
+    </div>
+    <div class="sv-icon-btn">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round">
+        <circle cx="5" cy="6" r="1.6"/><circle cx="5" cy="12" r="1.6"/><circle cx="5" cy="18" r="1.6"/>
+        <path d="M10 6h10M10 12h10M10 18h10"/>
+      </svg>
+    </div>
+    <div class="sv-search">
+      <span>البحث عن طريق الخدمة ، القطاع</span>
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#6c8099" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4" stroke-linecap="round"/></svg>
+    </div>
+  </div>
+
+  <div class="sv-main">
+    <div class="sv-scroll">
+      <div class="sv-sector">المرور</div>
+
+      <!-- ★ الخدمة الجديدة -->
+      <div class="sv-group">خدمات الاستجابة المرورية الذكية</div>
+      <div class="sv-grid">
+        <div class="sv-card live" onclick="showScreen('signal')">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.4">
+            <rect x="6.5" y="1.8" width="11" height="17.4" rx="3.4"/>
+            <circle cx="12" cy="6.4" r="2.1" fill="#ff5147" stroke="none"/>
+            <circle cx="12" cy="10.5" r="2.1" fill="#ffc233" stroke="none"/>
+            <circle cx="12" cy="14.6" r="2.1" fill="#42e070" stroke="none"/>
+            <path d="M12 19.2v2.4M9 22h6" stroke-linecap="round"/>
+          </svg>
+          <div class="sv-card-lbl">منظومة الإشارة المرورية الافتراضية</div>
+        </div>
+      </div>
+
+      <!-- خدمات المخالفات -->
+      <div class="sv-group">خدمات المخالفات المرورية</div>
+      <div class="sv-grid">
+        <div class="sv-card locked" onclick="lockedSvc()">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="13" height="15" rx="1.6"/><path d="M6 7h7M6 10h7M6 13h4"/>
+            <circle cx="17.5" cy="16.5" r="4.2"/><path d="M17.5 14.4v2.1l1.4 1"/>
+          </svg>
+          <div class="sv-card-lbl">أرشيف المخالفات المرورية</div>
+        </div>
+        <div class="sv-card locked" onclick="lockedSvc()">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="4" width="14" height="12" rx="1.6"/><path d="M6 8h8M6 11h5"/>
+            <path d="M14 19h7M17 16l-1.6 3 1.6 3" transform="translate(-1,-2)"/>
+            <circle cx="18.5" cy="7" r="2.6"/><path d="M18.5 9.6v2"/>
+          </svg>
+          <div class="sv-card-lbl">إصدار شهادة براءة ذمة</div>
+        </div>
+        <div class="sv-card locked" onclick="lockedSvc()">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2" y="6" width="20" height="12" rx="2"/><path d="M2 10h20"/>
+            <text x="12" y="16.4" text-anchor="middle" font-size="4.6" fill="#fff" stroke="none" font-family="Arial">AED</text>
+          </svg>
+          <div class="sv-card-lbl">دفع المخالفات المرورية</div>
+        </div>
+        <div class="sv-card locked" onclick="lockedSvc()">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2" y="5" width="20" height="14" rx="2"/><circle cx="7.5" cy="11" r="2.4"/>
+            <path d="M13 9h6M13 12h6M5 16h6"/>
+          </svg>
+          <div class="sv-card-lbl">تسجيل النقاط السوداء</div>
+        </div>
+        <div class="sv-card locked" onclick="lockedSvc()">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="4" y="2.5" width="14" height="17" rx="1.8"/><path d="M7 7h8M7 10.5h8M7 14h5"/>
+            <path d="M15 18.5v-2a2.2 2.2 0 0 1 4.4 0v2"/><rect x="14.2" y="18.3" width="6" height="4.4" rx="1"/>
+          </svg>
+          <div class="sv-card-lbl">إصدار شهادة فك حجز مركبة</div>
+        </div>
+        <div class="sv-card locked" onclick="lockedSvc()">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="6" width="18" height="12" rx="1.8"/>
+            <text x="12" y="12" text-anchor="middle" font-size="4.4" fill="#fff" stroke="none" font-family="Arial">AED</text>
+            <path d="M6 15h12"/>
+          </svg>
+          <div class="sv-card-lbl">دفع بدل مدة حجز المركبات</div>
+        </div>
+      </div>
+
+      <!-- الحوادث -->
+      <div class="sv-group">الحوادث المرورية</div>
+      <div class="sv-grid">
+        <div class="sv-card locked" onclick="lockedSvc()">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M2 15h6l1.5-3.4h5L16 15h6"/><circle cx="6" cy="17.4" r="1.5"/><circle cx="18" cy="17.4" r="1.5"/>
+            <path d="M12 3.4l1.5 2.6 2.6-1-1 2.6 2.6 1.5-2.6 1"/>
+          </svg>
+          <div class="sv-card-lbl">إصدار تقرير معاينة حادث مروري بسيط</div>
+        </div>
+        <div class="sv-card locked" onclick="lockedSvc()">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="4" y="2.5" width="16" height="19" rx="1.8"/><path d="M7.5 7h9M7.5 10.5h9"/>
+            <path d="M7.5 15.5h3l0.8-1.6h3l0.8 1.6h1.4"/>
+          </svg>
+          <div class="sv-card-lbl">تقرير حوادث المركبة</div>
+        </div>
+        <div class="sv-card locked" onclick="lockedSvc()">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M2 14h5l1.4-3.2h5L15 14h7"/><circle cx="6" cy="16.4" r="1.5"/><circle cx="17.5" cy="16.4" r="1.5"/>
+            <circle cx="18.5" cy="6" r="3.4"/><path d="M18.5 8.2v.1M17.4 5a1.2 1.2 0 0 1 2.2.6c0 .8-1.1 1-1.1 1.6"/>
+          </svg>
+          <div class="sv-card-lbl">الاستعلام عن حوادث المركبة</div>
+        </div>
+        <div class="sv-card locked" onclick="lockedSvc()">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 16h4l1.4-3.4h6L16 16h5"/><circle cx="7" cy="18.2" r="1.4"/><circle cx="17" cy="18.2" r="1.4"/>
+            <text x="12" y="9" text-anchor="middle" font-size="7" fill="#fff" stroke="none" font-family="Arial">?</text>
+          </svg>
+          <div class="sv-card-lbl">إصدار تقرير حادث ضد مجهول</div>
+        </div>
+      </div>
+
+      <!-- ترخيص السائقين -->
+      <div class="sv-group">ترخيص السائقين</div>
+      <div class="sv-grid">
+        <div class="sv-card locked" onclick="lockedSvc()">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2" y="5" width="16" height="12" rx="1.8"/><circle cx="7" cy="10" r="2.2"/><path d="M12 9h4M12 12h4M4.6 14.4h4.8"/>
+            <circle cx="19" cy="16.6" r="3.6"/><path d="M19 15.2v3M19 13.6v.1"/>
+          </svg>
+          <div class="sv-card-lbl">معلومات رخصة القيادة</div>
+        </div>
+        <div class="sv-card locked" onclick="lockedSvc()">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="5" width="18" height="13" rx="2"/><circle cx="8.5" cy="11" r="2.6"/><path d="M14 9.4h4M14 12.4h4M5.6 15.6h5.8"/>
+          </svg>
+          <div class="sv-card-lbl">عرض رخصة القيادة</div>
+        </div>
+        <div class="sv-card locked" onclick="lockedSvc()">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="15" height="16" rx="1.8"/><path d="M6.5 7.4h8M6.5 10.6h8"/>
+            <path d="M6.5 15h3l.9-1.8h3.2l.9 1.8h1.5"/>
+          </svg>
+          <div class="sv-card-lbl">فتح ملف مروري</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="sv-rail">
+      <div class="sv-rail-item on">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+          <path d="M2 14h4l1.6-4h8.8L18 14h4"/><path d="M4 14v3M20 14v3"/><circle cx="7" cy="16.5" r="1.3"/><circle cx="17" cy="16.5" r="1.3"/>
+        </svg>
+        <div class="sv-rail-lbl">المرور</div>
+      </div>
+      <div class="sv-rail-item">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+          <path d="M3 15c0-5 4-7 9-7s9 2 9 7"/><path d="M3 15h18"/><circle cx="12" cy="10.4" r="1.6"/>
+        </svg>
+        <div class="sv-rail-lbl">الشرطة</div>
+      </div>
+      <div class="sv-rail-item">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+          <path d="M4 16c0-6 3.6-9 8-9s8 3 8 9"/><path d="M4 16h16"/><path d="M12 7V4"/>
+        </svg>
+        <div class="sv-rail-lbl">الدفاع المدني</div>
+      </div>
+      <div class="sv-rail-item">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <circle cx="12" cy="12" r="2.4"/><circle cx="12" cy="4.6" r="1.8"/><circle cx="12" cy="19.4" r="1.8"/>
+          <circle cx="5.4" cy="8.4" r="1.8"/><circle cx="18.6" cy="8.4" r="1.8"/><circle cx="5.4" cy="15.6" r="1.8"/><circle cx="18.6" cy="15.6" r="1.8"/>
+        </svg>
+        <div class="sv-rail-lbl">خدمات عامة</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sv-nav">
+    <div class="sv-nav-item">
+      <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="8" r="3.4"/><path d="M4.5 20c0-4 3.4-6 7.5-6s7.5 2 7.5 6"/></svg>
+      <div class="sv-nav-lbl">الملف الشخصي</div>
+    </div>
+    <div class="sv-nav-item">
+      <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9"/><path d="M9.6 9.4a2.5 2.5 0 0 1 4.7 1.2c0 1.7-2.3 2-2.3 3.4M12 17.2v.1" stroke-linecap="round"/></svg>
+      <div class="sv-nav-lbl">المساعدة</div>
+    </div>
+    <div class="sv-nav-item on">
+      <svg width="21" height="21" viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="3" width="7.6" height="7.6" rx="1.6"/><rect x="13.4" y="3" width="7.6" height="7.6" rx="1.6"/><rect x="3" y="13.4" width="7.6" height="7.6" rx="1.6"/><rect x="13.4" y="13.4" width="7.6" height="7.6" rx="1.6"/></svg>
+      <div class="sv-nav-lbl">خدمات</div>
+    </div>
+    <div class="sv-nav-item">
+      <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 8h4M7 12h4M7 16h4M15 8h2M15 12h2M15 16h2"/></svg>
+      <div class="sv-nav-lbl">المركز الإعلامي</div>
+    </div>
+    <div class="sv-nav-item">
+      <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M3 11l9-7 9 7"/><path d="M5.5 9.6V20h13V9.6"/></svg>
+      <div class="sv-nav-lbl">شاشة التحكم</div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast">هذه الخدمة غير متاحة في العرض التجريبي</div>
+
+<!-- ═══════════════ الشاشة ٣ — الإشارة الحية ═══════════════ -->
+<div class="screen" id="screen-signal">
+  <div class="top-bar">
+    <button class="back-btn" onclick="showScreen('services')">→</button>
+    <img src="https://cdservices.moi.gov.ae/images/moilogo2016.png" alt="MOI">
+    <div class="app-info">
+      <div class="app-name">منظومة الإشارة المرورية الافتراضية</div>
+      <div class="app-sub" id="app-sub">— شارع الخليج العربي · أبوظبي</div>
+    </div>
+    <div class="live-pill"><div class="live-dot"></div><span class="live-txt">مباشر</span></div>
+  </div>
+
+  <div id="map"></div>
+
+  <div class="bottom-panel">
+    <div class="driver-msg-banner" id="driver-msg-banner">
+      <div class="dmb-icon">📢</div>
+      <div class="dmb-text" id="driver-msg-text"></div>
+    </div>
+
+    <div class="emergency-banner" id="emg-banner">
+      <div class="emg-icon"><div class="emg-icon-inner"></div></div>
+      <div><div class="et">تنبيه — مركبة طوارئ</div><div class="es">توجد سيارة طوارئ بالقرب من التقاطع — يرجى الانتباه وإفساح الطريق</div></div>
+    </div>
+
+    <div class="light-row">
+      <div class="tl-big" onclick="toggleFS()">
+        <div class="tl-big-l" id="big-r"></div>
+        <div class="tl-big-l" id="big-y"></div>
+        <div class="tl-big-l" id="big-g"></div>
+      </div>
+      <div class="sig-info">
+        <div class="si-dir" id="si-dir">إشارة</div>
+        <div class="si-phase" id="si-phase">--</div>
+        <div class="si-pill pill-r" id="si-pill">انتظار</div>
+      </div>
+      <div class="cd-ring-wrap">
+        <svg width="84" height="84" viewBox="0 0 84 84">
+          <circle class="cd-ring-bg" cx="42" cy="42" r="36"></circle>
+          <circle class="cd-ring-fg" id="cd-ring" cx="42" cy="42" r="36" stroke-dasharray="226.2" stroke-dashoffset="0"></circle>
+        </svg>
+        <div class="cd-center">
+          <div class="cd-num" id="si-cd">--</div>
+          <div class="cd-lbl">ثانية</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="info-row">
+      <div class="info-c"><div class="ic-v" id="ic-status">--</div><div class="ic-l">الحالة</div></div>
+      <div class="info-c"><div class="ic-v" id="ic-update">--</div><div class="ic-l">آخر تحديث</div></div>
+    </div>
+  </div>
+</div>
+
+<div class="tl-overlay" id="tl-overlay" onclick="toggleFS()">
+  <div class="fs-dir" id="fs-dir">إشارة</div>
+  <div class="tl-big-fs">
+    <div class="tl-big-fs-l" id="fs-r"></div>
+    <div class="tl-big-fs-l" id="fs-y"></div>
+    <div class="tl-big-fs-l" id="fs-g"></div>
+  </div>
+  <div class="fs-cd" id="fs-cd">--</div>
+  <div class="tl-fs-hint">اضغط للإغلاق</div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+<script>
+// ═══════════════════════════════════════════════
+//  اتجاه هذا الجهاز — السطر الوحيد الذي يختلف بين الملفات الأربعة
+var MY_DIR = 'south';
+// ═══════════════════════════════════════════════
+
+var DIRS = {
+  north: {ar:'شمال', sig:[24.467092,54.339913], me:[24.467231,54.340096]},
+  south: {ar:'جنوب', sig:[24.466718,54.339685], me:[24.466628,54.339575]},
+  east:  {ar:'شرق',  sig:[24.466816,54.339991], me:[24.466718,54.340061]},
+  west:  {ar:'غرب',  sig:[24.467016,54.339572], me:[24.467131,54.339463]}
+};
+var ME = DIRS[MY_DIR];
+
+document.title = 'وزارة الداخلية — إشارة ' + ME.ar;
+document.getElementById('app-sub').textContent = 'إشارة ' + ME.ar + ' — شارع الخليج العربي · أبوظبي';
+document.getElementById('si-dir').textContent = 'إشارة ' + ME.ar;
+document.getElementById('fs-dir').textContent = 'إشارة ' + ME.ar;
+
+// ===== التنقل بين الشاشات =====
+var mapReady = false;
+window.showScreen = function(name){
+  ['splash','services','signal'].forEach(function(s){
+    document.getElementById('screen-'+s).classList.toggle('active', s===name);
+  });
+  if(name === 'signal'){
+    // الخريطة بُنيت والحاوية مخفية — لازم إعادة قياس بعد الظهور
+    setTimeout(function(){
+      map.invalidateSize();
+      if(!mapReady){ mapReady = true; meMarker.openPopup(); }
+    }, 60);
+  }
+};
+
+var toastTimer = null;
+window.lockedSvc = function(){
+  var t = document.getElementById('toast');
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(function(){ t.classList.remove('show'); }, 1900);
+};
+
+firebase.initializeApp({
+  apiKey: "AIzaSyCehbVfacBO9T4-7S8M_WuG_2lVUTY0_Co",
+  authDomain: "vtrafficsignal.firebaseapp.com",
+  databaseURL: "https://vtrafficsignal-default-rtdb.firebaseio.com",
+  projectId: "vtrafficsignal",
+  storageBucket: "vtrafficsignal.firebasestorage.app",
+  messagingSenderId: "956203369573",
+  appId: "1:956203369573:web:4d040999267df3b5ae328c",
+  measurementId: "G-ZH9V5NWKCV"
+});
+var db = firebase.database();
+
+// ===== الخريطة =====
+var map = L.map('map', {zoomControl:true, attributionControl:false}).setView(ME.sig, 19);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {maxZoom:21}).addTo(map);
+
+function makeSigIcon(phase, mode){
+  var off = mode === 'off';
+  var r = (!off && phase==='red')    ? '#ff5147' : '#131a2c';
+  var y = (!off && phase==='yellow') ? '#ffc233' : '#131a2c';
+  var g = (!off && phase==='green')  ? '#42e070' : '#131a2c';
+  var html = '<div style="display:flex;flex-direction:column;align-items:center;filter:drop-shadow(2px 4px 5px rgba(0,0,0,0.8));">'
+    + '<svg viewBox="0 0 24 56" width="24" height="56" xmlns="http://www.w3.org/2000/svg">'
+    + '<rect x="2" y="0" width="20" height="48" rx="5" fill="#0b0f1c" stroke="#26304d" stroke-width="1.5"/>'
+    + '<circle cx="12" cy="10" r="7" fill="' + r + '"/>'
+    + '<circle cx="12" cy="24" r="7" fill="' + y + '"/>'
+    + '<circle cx="12" cy="38" r="7" fill="' + g + '"/>'
+    + '<rect x="10" y="48" width="4" height="8" rx="2" fill="#26304d"/>'
+    + '</svg></div>';
+  return L.divIcon({html:html, iconSize:[24,56], iconAnchor:[12,56], className:''});
+}
+
+function makeMarkerIcon(){
+  var html = '<div style="position:relative;width:34px;height:44px;">'
+    + '<div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-80%);'
+    + 'width:38px;height:38px;border-radius:50%;background:rgba(255,81,71,0.15);'
+    + 'border:2px solid rgba(255,81,71,0.4);animation:markerRing 1.5s infinite;"></div>'
+    + '<svg viewBox="0 0 34 44" width="34" height="44" xmlns="http://www.w3.org/2000/svg"'
+    + ' style="position:absolute;top:0;left:0;animation:markerBlink 1s infinite;">'
+    + '<ellipse cx="17" cy="42" rx="7" ry="2" fill="rgba(0,0,0,0.3)"/>'
+    + '<path d="M17 2 C10 2 4 8 4 15 C4 24 17 42 17 42 C17 42 30 24 30 15 C30 8 24 2 17 2 Z"'
+    + ' fill="#ff5147" stroke="white" stroke-width="2"/>'
+    + '<circle cx="17" cy="15" r="7" fill="white" opacity="0.95"/>'
+    + '<circle cx="17" cy="15" r="3.5" fill="#ff5147"/>'
+    + '</svg></div>';
+  return L.divIcon({html:html, iconSize:[34,44], iconAnchor:[17,42], className:''});
+}
+
+var sigMarker = L.marker(ME.sig, {icon: makeSigIcon('red')})
+  .addTo(map).bindPopup('<b>إشارة ' + ME.ar + '</b>');
+var meMarker = L.marker(ME.me, {icon: makeMarkerIcon()})
+  .addTo(map).bindPopup('<b>موقعي</b>');
+
+// إشارات الاتجاهات الأخرى
+var otherMarkers = {};
+Object.keys(DIRS).forEach(function(dir){
+  if(dir === MY_DIR) return;
+  otherMarkers[dir] = L.marker(DIRS[dir].sig, {icon:makeSigIcon('red')})
+    .addTo(map).bindPopup('<b>إشارة ' + DIRS[dir].ar + '</b>');
+  db.ref('signal/'+dir).on('value', function(s){
+    var d = s.val();
+    if(d) otherMarkers[dir].setIcon(makeSigIcon(d.phase||'red'));
+  });
+});
+
+// ===== دوال مساعدة =====
+var serverOffset = 0;
+db.ref('.info/serverTimeOffset').on('value', function(snap){ serverOffset = snap.val()||0; });
+
+function getCD(data){
+  if(!data || data.remainingAtSend===undefined || !data.sentAt) return '--';
+  var now = Date.now() + serverOffset;
+  return Math.max(0, Math.round(data.remainingAtSend - (now - data.sentAt)/1000));
+}
+function phaseAr(p){ return p==='green'?'أخضر':p==='yellow'?'أصفر':'أحمر'; }
+function phaseColor(p){ return p==='green'?'var(--green)':p==='yellow'?'var(--yellow)':'var(--red)'; }
+function phaseClass(p){ return p==='green'?'c-green':p==='yellow'?'c-yellow':'c-red'; }
+
+var RING_LEN = 226.2;
+var lastPhase = null, phaseMax = 1;
+
+function updateRing(phase, cd){
+  var ring = document.getElementById('cd-ring');
+  if(cd === '--'){ ring.style.strokeDashoffset = RING_LEN; return; }
+  if(phase !== lastPhase || cd > phaseMax){ lastPhase = phase; phaseMax = Math.max(cd, 1); }
+  var frac = Math.min(1, cd / phaseMax);
+  ring.style.strokeDashoffset = RING_LEN * (1 - frac);
+  ring.style.stroke = phaseColor(phase);
+}
+
+// ===== استمع لإشارتي =====
+db.ref('signal/'+MY_DIR).on('value', function(snap){
+  var data = snap.val();
+  if(!data) return;
+  var phase = data.phase || 'red';
+  var cd = getCD(data);
+
+  sigMarker.setIcon(makeSigIcon(phase));
+
+  document.getElementById('big-r').className = 'tl-big-l' + (phase==='red'    ? ' on-r' : '');
+  document.getElementById('big-y').className = 'tl-big-l' + (phase==='yellow' ? ' on-y' : '');
+  document.getElementById('big-g').className = 'tl-big-l' + (phase==='green'  ? ' on-g' : '');
+
+  document.getElementById('si-phase').textContent = phaseAr(phase);
+  var cdNum = document.getElementById('si-cd');
+  cdNum.textContent = cd;
+  cdNum.className = 'cd-num ' + phaseClass(phase);
+  updateRing(phase, cd);
+
+  var pill = document.getElementById('si-pill');
+  pill.className = 'si-pill ' + (phase==='green'?'pill-g':phase==='yellow'?'pill-y':'pill-r');
+  pill.textContent = phase==='green'?'تفضل':phase==='yellow'?'استعد':'قف';
+
+  document.getElementById('ic-status').textContent = phaseAr(phase);
+  var sec = Math.round((Date.now() - (data.ts||Date.now())) / 1000);
+  document.getElementById('ic-update').textContent = sec<=1?'الآن':sec+' ث';
+  document.getElementById('emg-banner').classList.toggle('show', !!data.emergency);
+  syncFS(phase, cd);
+});
+
+// ===== وضع ملء الشاشة =====
+function toggleFS(){
+  document.getElementById('tl-overlay').classList.toggle('show');
+}
+function syncFS(phase, cd){
+  document.getElementById('fs-r').className = 'tl-big-fs-l' + (phase==='red'    ? ' on-r' : '');
+  document.getElementById('fs-y').className = 'tl-big-fs-l' + (phase==='yellow' ? ' on-y' : '');
+  document.getElementById('fs-g').className = 'tl-big-fs-l' + (phase==='green'  ? ' on-g' : '');
+  var fscd = document.getElementById('fs-cd');
+  fscd.textContent = cd;
+  fscd.className = 'fs-cd ' + phaseClass(phase);
+}
+
+// ===== رسالة السائقين =====
+db.ref('signal/driver_message').on('value', function(snap){
+  var data = snap.val();
+  var banner = document.getElementById('driver-msg-banner');
+  if(data && data.active && data.text){
+    document.getElementById('driver-msg-text').textContent = data.text;
+    banner.classList.add('show');
+  } else {
+    banner.classList.remove('show');
+  }
+});
+</script>
+</body>
+</html>
